@@ -1447,7 +1447,7 @@
  
     const ARABIC_MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
     const ARABIC_DAYS   = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-    const FAVORITES_KEY = 'alrahalat_favorites_v1';
+    const FAVORITES_KEY = 'myarch_favorites_v1';
  
     function formatDate(dateStr) {
         if (!dateStr) return '';
@@ -1469,7 +1469,7 @@
  
     // ====== Theme ======
     function initTheme() {
-        const saved = localStorage.getItem('MyArchive') || 'light';
+        const saved = localStorage.getItem('myarch_theme') || 'light';
         document.documentElement.setAttribute('data-theme', saved);
         updateThemeIcon(saved);
     }
@@ -1477,7 +1477,7 @@
         const cur = document.documentElement.getAttribute('data-theme');
         const next = cur === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('MyArchive', next);
+        localStorage.setItem('myarch_theme', next);
         updateThemeIcon(next);
     }
     function updateThemeIcon(theme) {
@@ -3010,7 +3010,7 @@
     window.addEventListener('resize', () => { if (window.innerWidth > 768) closeSidebar(); });
  
     // ====== Memories System ======
-    const MEMORIES_CACHE_KEY      = 'memories_cache_v2';
+    const MEMORIES_CACHE_KEY = 'myarch_memories_cache_v2';
     const MEMORIES_CACHE_DURATION = 6 * 60 * 60 * 1000;
     const DAYS_WINDOW             = 14;
  
@@ -3769,7 +3769,7 @@
              '--bg-glass','--bg-glass-strong'].forEach(p => root.style.removeProperty(p));
         }
 
-        const SLIDER_KEY = 'colorSliderVal';
+        const SLIDER_KEY = 'myarch_colorSliderVal';
         const saved = localStorage.getItem(SLIDER_KEY);
         if (saved !== null) slider.value = saved;
         else slider.value = 87;
