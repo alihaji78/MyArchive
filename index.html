@@ -799,17 +799,21 @@
         .memories-loading-text { font-size: 14px; font-weight: 600; }
         .memories-loading-progress { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
         .memories-tabs {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            display: flex;
+            flex-wrap: nowrap;
             gap: 8px;
             margin-bottom: 14px;
         }
+        .memories-tabs .memories-tab {
+            flex: 1;
+        }
         @media (max-width: 540px) {
             .memories-tabs {
-                grid-template-columns: repeat(2, 1fr);
+                flex-wrap: wrap;
             }
-            .memories-tab {
-                width: 100%;
+            .memories-tabs .memories-tab {
+                flex: 1 1 calc(50% - 4px);
+                width: auto;
                 justify-content: center;
             }
         }
@@ -1421,6 +1425,7 @@
 </div>
  
 <script>
+// ====== API_KEY و FOLDER_ID استبدل هنا: مفتاحي ======
        const API_KEY        = 'AIzaSyDLrMntlXAQLVwDoffPtijhbdTllzuWmXk';
        const ROOT_FOLDER_ID = '112u1iFGY_rzp4XE_znPuZWIlglk2EaXl';
  
@@ -1447,7 +1452,8 @@
  
     const ARABIC_MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
     const ARABIC_DAYS   = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-    const FAVORITES_KEY = 'myarch_favorites_v1';
+    // ====== استبدل هنا: مفتاح حفظ المفضلة — يجب أن يكون فريداً لكل نسخة ======
+    const FAVORITES_KEY = 'MyArchive_favorites_v1';
  
     function formatDate(dateStr) {
         if (!dateStr) return '';
@@ -1469,7 +1475,8 @@
  
     // ====== Theme ======
     function initTheme() {
-        const saved = localStorage.getItem('myarch_theme') || 'light';
+        // ====== استبدل هنا: مفتاح حفظ الثيم (فاتح/داكن) — يجب أن يكون فريداً لكل نسخة ======
+        const saved = localStorage.getItem('MyArchive') || 'light';
         document.documentElement.setAttribute('data-theme', saved);
         updateThemeIcon(saved);
     }
@@ -1477,7 +1484,8 @@
         const cur = document.documentElement.getAttribute('data-theme');
         const next = cur === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('myarch_theme', next);
+        // ====== استبدل هنا: مفتاح حفظ الثيم (فاتح/داكن) — يجب أن يكون فريداً لكل نسخة ======
+        localStorage.setItem('MyArchive', next);
         updateThemeIcon(next);
     }
     function updateThemeIcon(theme) {
@@ -3010,7 +3018,8 @@
     window.addEventListener('resize', () => { if (window.innerWidth > 768) closeSidebar(); });
  
     // ====== Memories System ======
-    const MEMORIES_CACHE_KEY = 'myarch_memories_cache_v2';
+    // ====== استبدل هنا: مفتاح كاش الذكريات — يجب أن يكون فريداً لكل نسخة ======
+    const MEMORIES_CACHE_KEY      = 'MyArchive_cache_v2';
     const MEMORIES_CACHE_DURATION = 6 * 60 * 60 * 1000;
     const DAYS_WINDOW             = 14;
  
@@ -3769,9 +3778,14 @@
              '--bg-glass','--bg-glass-strong'].forEach(p => root.style.removeProperty(p));
         }
 
-        const SLIDER_KEY = 'myarch_colorSliderVal';
+        // ====== استبدل هنا: مفتاح حفظ لون السلايدر — يجب أن يكون فريداً لكل نسخة ======
+        const SLIDER_KEY = 'MyArchive_colorSlider';
         const saved = localStorage.getItem(SLIDER_KEY);
         if (saved !== null) slider.value = saved;
+        // ====== استبدل هنا: اللون الافتراضي للسلايدر — القيم من 0 إلى 100 (راجع جدول الألوان stops أعلاه) ======
+        // 0=أبيض | 6=رمادي فاتح | 12=رمادي دافئ | 18=كريمي | 24=برتقالي فاتح | 30=برتقالي دافئ | 36=برتقالي غامق
+        // 43=ذهبي | 49=عسلي | 56=أخضر نعناع | 62=أخضر زيتوني | 69=سماوي | 75=أزرق | 81=أزرق غامق
+        // 87=بنفسجي هادئ | 93=بنفسجي غامق | 100=وردي
         else slider.value = 87;
 
         function onSliderChange() {
