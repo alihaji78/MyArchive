@@ -3790,15 +3790,20 @@
     // ====== Cache ======
     function cacheMemories(memories, allImages) {
         try {
-            // ====== إصلاح الكاش: MEMORIES_CACHE_KEY يحفظ الملخص فقط بدون allImages ======
-            // allImages محفوظة بشكل منفصل في IMAGES_RAW_CACHE_KEY لتجنب التكرار وتوفير المساحة
+            // نخزّن الذكريات + مراجع مختصرة للصور الكاملة (id, name, createdTime, folderPath فقط)
+            const compactAll = allImages.map(img => ({
+                id: img.id, name: img.name,
+                createdTime: img.createdTime,
+                folderPath: img.folderPath || ''
+            }));
             localStorage.setItem(MEMORIES_CACHE_KEY, JSON.stringify({
                 timestamp: Date.now(),
+                // نحفظ التاريخ للتحقق من تغيّر اليوم (إعادة حساب الملخص يومياً)
                 date: new Date().toDateString(),
-                memories
-                // لا نحفظ allImages هنا — تُقرأ من getRawImagesCache()
+                memories,
+                allImages: compactAll
             }));
-        } catch(e) { console.error('❌ فشل حفظ كاش الذكريات:', e); }
+        } catch {}
     }
 
     function getCachedMemories() {
@@ -3806,32 +3811,28 @@
             const raw = localStorage.getItem(MEMORIES_CACHE_KEY);
             if (!raw) return null;
             const c = JSON.parse(raw);
-            // إذا تغيّر اليوم: الملخص قديم → أعد الحساب
+            // إذا تغيّر اليوم: الملخص قديم (صور اليوم تختلف) → أعد الحساب
             if (c.date !== new Date().toDateString()) return null;
             // إذا مرّت أكثر من 24 ساعة: أعد الجلب من Drive
             if (Date.now() - c.timestamp > MEMORIES_CACHE_DURATION) return null;
-            // ====== إصلاح: allImages تُقرأ من IMAGES_RAW_CACHE_KEY بدلاً من MEMORIES_CACHE_KEY ======
-            const allImages = getRawImagesCache() || [];
-            return { memories: c.memories, allImages };
+            return { memories: c.memories, allImages: c.allImages || [] };
         } catch { return null; }
     }
 
     // ===== كاش الصور الخام: يُبقي بيانات Drive لمدة 24 ساعة بغض النظر عن اليوم =====
+    // تعديل: مضاف لتجنب إعادة الاتصال بـ Drive عند تغيّر اليوم فقط
     function saveRawImagesCache(allImages) {
         try {
-            // ====== ضغط بيانات الصور: تقصير أسماء الحقول لتوفير المساحة ======
-            // i=id | n=name | t=createdTime (timestamp رقمي) | f=folderPath
             const compactAll = allImages.map(img => ({
-                i: img.id,
-                n: img.name,
-                t: img.createdTime ? new Date(img.createdTime).getTime() : 0,
-                f: img.folderPath || ''
+                id: img.id, name: img.name,
+                createdTime: img.createdTime,
+                folderPath: img.folderPath || ''
             }));
             localStorage.setItem(IMAGES_RAW_CACHE_KEY, JSON.stringify({
                 timestamp: Date.now(),
                 allImages: compactAll
             }));
-        } catch(e) { console.error('❌ فشل حفظ كاش الصور الخام:', e); }
+        } catch {}
     }
 
     function getRawImagesCache() {
@@ -3841,13 +3842,7 @@
             const c = JSON.parse(raw);
             // صالح لمدة 24 ساعة فقط
             if (Date.now() - c.timestamp > MEMORIES_CACHE_DURATION) return null;
-            // ====== فك الضغط: إعادة الحقول لأسمائها الأصلية ======
-            return (c.allImages || []).map(img => ({
-                id: img.i,
-                name: img.n,
-                createdTime: img.t ? new Date(img.t).toISOString() : '',
-                folderPath: img.f || ''
-            }));
+            return c.allImages || null;
         } catch { return null; }
     }
  
@@ -4196,4 +4191,4 @@
 
 </script>
 </body>
-										 </html>
+	</html>
