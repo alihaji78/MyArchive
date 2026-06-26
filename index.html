@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>✨ أرشيف علي حاجي للصور ✨</title>
+    <title>✨ أرشيف علي الحاجي ✨</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
@@ -1106,6 +1106,114 @@
         [data-theme="dark"] .btn-load-more:hover { background: rgba(79,142,247,0.12); }
         [data-theme="dark"] .memories-total-pill { background: rgba(79,142,247,0.15); border-color: rgba(79,142,247,0.3); color: #a8c8ff; }
         [data-theme="dark"] .memories-hero-badge { background: rgba(79,142,247,0.22); border-color: rgba(100,160,255,0.35); }
+        /* ============================================================
+           ====== نظام عرض الشرائح (Slideshow) — مضاف جديد ======
+           لنقل هذه الميزة لملف آخر: انسخ هذا القسم CSS كاملاً،
+           وانسخ HTML الخاص بـ #slideshowPanel و #slideshowOverlay،
+           وانسخ كتلة JS الموسومة بـ SLIDESHOW START/END
+           ============================================================ */
+
+        /* --- لوحة إعدادات الشرائح --- */
+        #slideshowPanel {
+            position: fixed; inset: 0; z-index: 3000;
+            background: rgba(0,0,0,0.82);
+            display: none; align-items: center; justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+        #slideshowPanel.active { display: flex; }
+        .ss-box {
+            background: var(--bg-glass-strong);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid var(--border);
+            border-radius: 22px; padding: 28px 28px 22px;
+            width: min(380px, 90vw);
+            box-shadow: 0 24px 64px rgba(0,0,0,0.35);
+            display: flex; flex-direction: column; gap: 18px;
+            font-family: 'Cairo', sans-serif;
+        }
+        .ss-title {
+            font-size: 16px; font-weight: 900;
+            color: var(--text-primary); text-align: center;
+        }
+        .ss-row { display: flex; align-items: center; gap: 12px; }
+        .ss-row label { font-size: 13px; font-weight: 700; color: var(--text-secondary); flex-shrink: 0; min-width: 110px; }
+        .ss-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+        .ss-row .ss-val { font-size: 13px; font-weight: 800; color: var(--accent); min-width: 55px; text-align: center; }
+        .ss-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+        .ss-row span.ss-chk-label { font-size: 13px; font-weight: 700; color: var(--text-secondary); cursor: pointer; }
+        .ss-btns { display: flex; gap: 10px; margin-top: 4px; }
+        .ss-btn-start {
+            flex: 1; padding: 13px; border-radius: 14px; border: none; cursor: pointer;
+            font-size: 14px; font-weight: 900; font-family: 'Cairo', sans-serif;
+            background: var(--accent); color: #fff;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+        .ss-btn-start:hover { opacity: 0.88; transform: translateY(-1px); }
+        .ss-btn-cancel {
+            padding: 13px 18px; border-radius: 14px; border: 1px solid var(--border);
+            background: var(--bg-primary); color: var(--text-secondary);
+            cursor: pointer; font-size: 13px; font-weight: 700; font-family: 'Cairo', sans-serif;
+            transition: background 0.15s;
+        }
+        .ss-btn-cancel:hover { background: var(--hover-bg); }
+
+        /* --- شاشة عرض الشرائح الكاملة --- */
+        #slideshowOverlay {
+            position: fixed; inset: 0; z-index: 4000;
+            background: #000;
+            display: none; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        #slideshowOverlay.active { display: flex; }
+        #ssImg {
+            max-width: 100vw; max-height: 100vh;
+            width: 100%; height: 100%;
+            object-fit: contain;
+            transition: opacity 0.5s ease;
+        }
+        /* شريط تحكم الشرائح في الأسفل */
+        #ssControls {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 14px 20px;
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.75));
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        #slideshowOverlay:hover #ssControls,
+        #slideshowOverlay.show-controls #ssControls { opacity: 1; }
+        .ss-ctrl-btn {
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+            color: #fff; border-radius: 50%; width: 44px; height: 44px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0; transition: background 0.2s;
+            font-family: 'Cairo', sans-serif;
+        }
+        .ss-ctrl-btn:hover { background: rgba(255,255,255,0.28); }
+        .ss-ctrl-btn svg { width: 20px; height: 20px; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+        #ssProgressBar {
+            flex: 1; height: 4px; background: rgba(255,255,255,0.2);
+            border-radius: 2px; overflow: hidden;
+        }
+        #ssProgressFill {
+            height: 100%; background: var(--accent);
+            width: 0%; transition: width linear;
+        }
+        #ssCounter {
+            font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.85);
+            min-width: 55px; text-align: center; flex-shrink: 0;
+        }
+        /* عنوان الصورة في أعلى شاشة الشرائح */
+        #ssTitle {
+            position: absolute; top: 0; left: 0; right: 0;
+            padding: 14px 20px;
+            font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.85);
+            background: linear-gradient(rgba(0,0,0,0.65), transparent);
+            opacity: 0; transition: opacity 0.3s ease;
+            font-family: 'Cairo', sans-serif; text-align: right;
+        }
+        #slideshowOverlay:hover #ssTitle,
+        #slideshowOverlay.show-controls #ssTitle { opacity: 1; }
     </style>
 </head>
 <body>
@@ -1116,7 +1224,7 @@
             <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
     </div>
-    <div class="nav-title">✨ أرشيف علي الحاجي ✨</div>
+    <div class="nav-title">✨ أرشيف الصور ✨</div>
     <div class="nav-side">
         <button class="btn-nav" id="themeToggle" onclick="toggleTheme()" aria-label="تبديل الوضع">
             <svg id="themeIcon" viewBox="0 0 24 24"></svg>
@@ -1394,6 +1502,10 @@
             <button class="lightbox-btn" id="lightboxShare" onclick="shareLightboxImage()" aria-label="حفظ الرابط" title="حفظ الرابط">
                 <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11 5"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07L13 19"/></svg>
             </button>
+            <!-- ====== زر تشغيل عرض الشرائح — مضاف جديد ====== -->
+            <button class="lightbox-btn" onclick="openSlideshowPanel()" aria-label="عرض الشرائح" title="عرض الشرائح">
+                <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </button>
             <a class="lightbox-btn" id="lightboxDownload" target="_blank" aria-label="تحميل">
                 <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </a>
@@ -1415,6 +1527,73 @@
     </div>
 </div>
  
+<!-- ============================================================
+     ====== لوحة إعدادات الشرائح — مضافة جديدة ======
+     لنقل هذه الميزة: انسخ هذا الـ div كاملاً
+     ============================================================ -->
+<div id="slideshowPanel">
+    <div class="ss-box">
+        <div class="ss-title">▶ عرض الشرائح</div>
+
+        <!-- مدة العرض -->
+        <div class="ss-row">
+            <label>⏱ مدة العرض:</label>
+            <input type="range" id="ssDuration" min="0.5" max="60" step="0.5" value="3"
+                   oninput="document.getElementById('ssDurVal').innerText = this.value + ' ث'">
+            <span class="ss-val" id="ssDurVal">3 ث</span>
+        </div>
+
+        <!-- تكرار العرض -->
+        <div class="ss-row">
+            <label>🔁 تكرار:</label>
+            <input type="checkbox" id="ssLoop" checked>
+            <span class="ss-chk-label" onclick="document.getElementById('ssLoop').click()">تكرار الشرائح تلقائياً</span>
+        </div>
+
+        <!-- ترتيب عشوائي -->
+        <div class="ss-row">
+            <label>🔀 عشوائي:</label>
+            <input type="checkbox" id="ssShuffle">
+            <span class="ss-chk-label" onclick="document.getElementById('ssShuffle').click()">ترتيب عشوائي للصور</span>
+        </div>
+
+        <div class="ss-btns">
+            <button class="ss-btn-start" onclick="startSlideshow()">▶ ابدأ العرض</button>
+            <button class="ss-btn-cancel" onclick="closeSlideshowPanel()">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     ====== شاشة عرض الشرائح الكاملة — مضافة جديدة ======
+     لنقل هذه الميزة: انسخ هذا الـ div كاملاً
+     ============================================================ -->
+<div id="slideshowOverlay">
+    <div id="ssTitle"></div>
+    <img id="ssImg" src="" alt="">
+    <div id="ssControls">
+        <!-- زر إيقاف/تشغيل -->
+        <button class="ss-ctrl-btn" id="ssPauseBtn" onclick="toggleSlideshowPause()" title="إيقاف مؤقت">
+            <svg id="ssPauseIcon" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        </button>
+        <!-- زر السابق -->
+        <button class="ss-ctrl-btn" onclick="slideshowStep(-1)" title="السابق">
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <!-- شريط التقدم + عداد -->
+        <div id="ssProgressBar"><div id="ssProgressFill"></div></div>
+        <div id="ssCounter">1/1</div>
+        <!-- زر التالي -->
+        <button class="ss-ctrl-btn" onclick="slideshowStep(1)" title="التالي">
+            <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <!-- زر إغلاق -->
+        <button class="ss-ctrl-btn" onclick="stopSlideshow()" title="إغلاق">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+    </div>
+</div>
+
 <!-- Progress -->
 <div class="progress-overlay" id="progressOverlay">
     <div class="progress-box">
@@ -3050,8 +3229,10 @@
     }
 
     // تحديث الذكريات (مسح الكاش وإعادة التحميل)
+    // تعديل: يمسح الآن كاش الصور الخام أيضاً لضمان جلب جديد كامل من Drive
     function refreshMemories() {
         try { localStorage.removeItem(MEMORIES_CACHE_KEY); } catch(_) {}
+        try { localStorage.removeItem(IMAGES_RAW_CACHE_KEY); } catch(_) {}
         showToast('جاري تحديث الذكريات... 🔄', 'success');
         setTimeout(() => {
             // إعادة تحميل قسم الذكريات بعد مسح الكاش
@@ -3080,21 +3261,53 @@
     // ====== Memories System ======
     //###########[ استبدل هنا ]############
     // مفتاح كاش الذكريات في localStorage — غيّره لكل نسخة لتجنب التداخل
+    //###########[ استبدل هنا ]############
+    // مفتاح كاش بيانات الصور الكاملة في localStorage — غيّره لكل نسخة لتجنب التداخل
     const MEMORIES_CACHE_KEY      = 'MyArchive_cache';
-    const MEMORIES_CACHE_DURATION = 6 * 60 * 60 * 1000;
+
+    //###########[ استبدل هنا ]############
+    // مفتاح كاش قائمة الصور الخام (مستقل عن اليوم) — غيّره لكل نسخة لتجنب التداخل
+    const IMAGES_RAW_CACHE_KEY    = 'MyArchive_images_raw';
+
+    // مدة الكاش: 24 ساعة
+    // تعديل: رُفعت من 6 ساعات إلى 24 ساعة لتقليل الاتصالات بـ Google Drive
+    const MEMORIES_CACHE_DURATION = 24 * 60 * 60 * 1000;
     const DAYS_WINDOW             = 14;
- 
+
     async function loadMemories() {
         updateMemoriesHeader();
+
+        // ===== طبقة 1: كاش الملخص اليومي (يوم بيوم) =====
         const cached = getCachedMemories();
-        if (cached) { renderMemories(cached.memories, cached.allImages); return; }
+        if (cached) {
+            // الملخص اليومي موجود وصالح — عرضه مباشرة بدون أي اتصال
+            renderMemories(cached.memories, cached.allImages);
+            return;
+        }
+
+        // ===== طبقة 2: كاش الصور الخام (24 ساعة، مستقل عن اليوم) =====
+        // إذا تغيّر اليوم لكن لم تمر 24 ساعة على آخر جلب من Drive
+        // نعيد حساب الملخص من الصور المحفوظة بدون اتصال بالإنترنت
+        const rawCached = getRawImagesCache();
+        if (rawCached) {
+            const progressEl = document.getElementById('memoriesProgress');
+            progressEl.innerText = '⚡ جاري إعداد الملخص من الكاش...';
+            const memories = filterMemories(rawCached);
+            cacheMemories(memories, rawCached);
+            renderMemories(memories, rawCached);
+            return;
+        }
+
+        // ===== طبقة 3: جلب من Google Drive (عند انتهاء الكاش أو أول تشغيل) =====
         const progressEl = document.getElementById('memoriesProgress');
         try {
-            if (progressEl) progressEl.innerText = '🔍 جاري فحص المجلدات الرئيسية...';
+            progressEl.innerText = '🔍 جاري فحص المجلدات الرئيسية...';
             const allImages = await fetchAllImagesRecursive(ROOT_FOLDER_ID, '', progressEl);
             if (allImages.length === 0) { showNoMemories('لا توجد صور حتى الآن'); return; }
-            if (progressEl) progressEl.innerText = `تم العثور على ${formatCountEn(allImages.length)} صورة، جاري تحليل التواريخ...`;
+            progressEl.innerText = `تم العثور على ${formatCountEn(allImages.length)} صورة، جاري تحليل التواريخ...`;
             const memories = filterMemories(allImages);
+            // حفظ الصور الخام (24 ساعة) والملخص اليومي معاً
+            saveRawImagesCache(allImages);
             cacheMemories(memories, allImages);
             renderMemories(memories, allImages);
         } catch (e) {
@@ -3106,7 +3319,7 @@
     function updateMemoriesHeader() {
         const today   = new Date();
         const dayName = ARABIC_DAYS[today.getDay()];
-        document.getElementById('memoriesTitle').innerText    = '📅 في مثل هذا اليوم';
+        document.getElementById('memoriesTitle').innerText    = '🖼️ أرشيف علي الحاجي';
         document.getElementById('memoriesSubtitle').innerText = `📆 ${dayName}، ${formatCountEn(today.getDate())} ${ARABIC_MONTHS[today.getMonth()]}`;
     }
  
@@ -3225,155 +3438,41 @@
  
     function renderMemories(memories, allImages) {
         const content = document.getElementById('memoriesContent');
-        const todayMemories = memories?.todayMemories || memories || {};
-        const weekMemories = memories?.weekMemories || [];
-        const monthMemories = memories?.monthMemories || [];
-        const periodMemories = weekMemories.length > 0 ? weekMemories : monthMemories;
-        const periodLabel = weekMemories.length > 0 ? 'هذا الأسبوع' : 'هذا الشهر';
-        const hasPeriodMemories = periodMemories.length > 0;
+        // ====== تم حذف أقسام: اليوم، الأسبوع، الشهر، الصور العشوائية ======
+        // ====== تم الإبقاء على: صور متفرقة (افتراضي) + المفضلة فقط ======
         const scatteredMemories = pickScatteredImages(allImages || []);
         const totalImagesCount = (allImages || []).length;
-        const years   = Object.keys(todayMemories).map(Number).sort((a, b) => a - b);
         const totalEl = document.getElementById('memoriesTotalCount');
         if (totalEl) totalEl.innerText = `🖼️ إجمالي الصور: ${formatCountEn(totalImagesCount)}`;
 
-        const totalToday   = years.reduce((s, y) => s + todayMemories[y].length, 0);
         const today   = new Date();
         const dayName = ARABIC_DAYS[today.getDay()];
         const subtitleBits = [];
-        if (totalToday > 0) subtitleBits.push(`${formatCountEn(totalToday)} ذكرى اليوم`);
-        if (periodMemories.length > 0) subtitleBits.push(`${formatCountEn(periodMemories.length)} من ${periodLabel}`);
         if (scatteredMemories.length > 0) subtitleBits.push(`${formatCountEn(scatteredMemories.length)} صور متفرقة`);
         if (subtitleBits.length === 0) subtitleBits.push('لقطات من الذكريات');
         document.getElementById('memoriesSubtitle').innerText = `📆 ${dayName}، ${formatCountEn(today.getDate())} ${ARABIC_MONTHS[today.getMonth()]} • ${subtitleBits.join(' • ')}`;
-        // عناصر الذكريات الآن موجودة داخل defaultEmptyState — نخفي فقط شرائط المجلدات
+
         ['breadcrumb','contentHeader','filterBar','sortBar','folderActionsBar','subFoldersSection','imagesSection'].forEach(id => {
             const el = document.getElementById(id); if (el) el.classList.add('hidden-el');
         });
-        // إظهار شريط الذكريات
         const mab = document.getElementById('memActionsBar');
         if (mab) mab.classList.remove('hidden-el');
 
-        // نُدرج: 1-التبويبات  2-شريط الفلترة (يُحقن لاحقاً بـ showMemFilterBar)  3-البانلات
+        // ====== تبويبان فقط: متفرقة (افتراضي) + مفضلة ======
         content.innerHTML = `
             <div class="memories-tabs">
-                <button class="memories-tab active" id="memTabToday" type="button">📅 اليوم</button>
-                ${hasPeriodMemories ? `<button class="memories-tab" id="memTabWeek" type="button">📆 ${periodLabel}</button>` : ''}
-                <button class="memories-tab" id="memTabScattered" type="button">🎲 صور متفرقة</button>
+                <button class="memories-tab active" id="memTabScattered" type="button">🎲 صور متفرقة</button>
                 <button class="memories-tab" id="memTabFavorites" type="button">⭐ المفضلة</button>
             </div>
             <div id="memFilterBarInline"></div>
-            <div class="memories-tab-panel" id="memoriesTodayPanel"></div>
-            <div class="memories-tab-panel hidden-el" id="memoriesWeekPanel"></div>
-            <div class="memories-tab-panel hidden-el" id="memoriesScatteredPanel"></div>
+            <div class="memories-tab-panel" id="memoriesScatteredPanel"></div>
             <div class="memories-tab-panel hidden-el" id="memoriesFavoritesPanel"></div>
         `;
-        const todayPanel = document.getElementById('memoriesTodayPanel');
-        const weekPanel = document.getElementById('memoriesWeekPanel');
+
         const scatteredPanel = document.getElementById('memoriesScatteredPanel');
+        const favoritesPanel = document.getElementById('memoriesFavoritesPanel');
 
-        if (years.length > 0) {
-            years.forEach((yearsAgo, groupIdx) => {
-                const images    = todayMemories[yearsAgo].map(img => ({ ...img, _memSource: String(yearsAgo) }));
-                const year      = new Date().getFullYear() - yearsAgo;
-                const yearLabel = yearsAgo === 1 ? 'قبل سنة' : `قبل ${yearsAgo} سنوات`;
-                const group     = document.createElement('div');
-                group.className = 'memory-year-group';
-                group.style.animationDelay = `${groupIdx * 100}ms`;
-                group.innerHTML = `
-                    <div class="memory-year-header">
-                        <span class="memory-year-number">${year}</span>
-                        <span class="memory-year-label">🕰️ ${yearLabel}</span>
-                        <span class="memory-year-count" id="mem-year-count-${yearsAgo}">📸 ${formatCountEn(images.length)} صورة</span>
-                    </div>
-                    <div class="images-grid" id="memory-grid-${yearsAgo}" data-mem-source="${yearsAgo}"></div>`;
-                todayPanel.appendChild(group);
-
-                const grid    = group.querySelector(`#memory-grid-${yearsAgo}`);
-                const memImgs = images.map(img => ({ id: img.id, name: img.name }));
-
-                images.forEach((p, i) => {
-                    const imgDate = new Date(p.imgDate);
-                    const dateStr = `${formatCountEn(imgDate.getDate())} ${ARABIC_MONTHS[imgDate.getMonth()]}`;
-                    const card = document.createElement('div');
-                    card.className = 'image-card memory-card';
-                    card.dataset.memId = p.id;
-                    card.style.animationDelay = `${Math.min(i * 50, 500)}ms`;
-                    card.innerHTML = `
-                        <div class="memory-card-badge">
-                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                            ${dateStr}
-                        </div>
-                        <div class="img-container" onclick='openMemoryLightbox(${JSON.stringify(memImgs)},${i})'>
-                            <img src="https://drive.google.com/thumbnail?id=${p.id}&sz=w800" loading="lazy" alt="${escapeHtml(p.name)}" onload="this.classList.add('loaded')">
-                            <div class="img-overlay">
-                                <span>
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M14 10l6.1-6.1M9 21H3v-6M10 14l-6.1 6.1"/></svg>
-                                    عرض بالحجم الكامل
-                                </span>
-                            </div>
-                        </div>
-                        <div class="img-info">
-                            <div class="img-meta">
-                                <div class="img-name">${escapeHtml(p.name)}</div>
-                                <div class="memory-card-folder">📁 ${escapeHtml(p.folderPath)}</div>
-                                ${favoriteImages.has(p.id) ? '<div class="img-favorite-badge">⭐ مفضلة</div>' : ''}
-                            </div>
-                            ${renderImageActions({ id: p.id, name: p.name, createdTime: p.imgDate || p.createdTime, folderPath: p.folderPath || '' }, false)}
-                        </div>`;
-                    grid.appendChild(card);
-                });
-            });
-        } else if (allImages && allImages.length > 0) {
-            renderRandomImages(allImages, todayPanel, true);
-        }
-
-        if (periodMemories.length > 0) {
-            const weekGroup = document.createElement('div');
-            weekGroup.className = 'memory-year-group';
-            weekGroup.innerHTML = `
-                <div class="memory-year-header">
-                    <span class="memory-year-number">📆</span>
-                    <span class="memory-year-label">✨ في ${periodLabel}</span>
-                    <span class="memory-year-count">📸 ${formatCountEn(periodMemories.length)} صورة</span>
-                </div>
-                <div class="images-grid" id="week-memory-grid"></div>`;
-            weekPanel.appendChild(weekGroup);
-            const weekGrid = weekGroup.querySelector('#week-memory-grid');
-            const weekImgs = periodMemories.map(img => ({ id: img.id, name: img.name }));
-            periodMemories.forEach((p, i) => {
-                const imgDate = new Date(p.imgDate);
-                const dateStr = `${formatCountEn(imgDate.getDate())} ${ARABIC_MONTHS[imgDate.getMonth()]}`;
-                const card = document.createElement('div');
-                card.className = 'image-card memory-card';
-                card.dataset.memId = p.id;
-                card.style.animationDelay = `${Math.min(i * 50, 500)}ms`;
-                card.innerHTML = `
-                    <div class="memory-card-badge">
-                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        ${dateStr}
-                    </div>
-                    <div class="img-container" onclick='openMemoryLightbox(${JSON.stringify(weekImgs)},${i})'>
-                        <img src="https://drive.google.com/thumbnail?id=${p.id}&sz=w800" loading="lazy" alt="${escapeHtml(p.name)}" onload="this.classList.add('loaded')">
-                        <div class="img-overlay">
-                            <span>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M14 10l6.1-6.1M9 21H3v-6M10 14l-6.1 6.1"/></svg>
-                                عرض بالحجم الكامل
-                            </span>
-                        </div>
-                    </div>
-                    <div class="img-info">
-                        <div class="img-meta">
-                            <div class="img-name">${escapeHtml(p.name)}</div>
-                            <div class="memory-card-folder">📁 ${escapeHtml(p.folderPath)}</div>
-                            ${favoriteImages.has(p.id) ? '<div class="img-favorite-badge">⭐ مفضلة</div>' : ''}
-                        </div>
-                        ${renderImageActions({ id: p.id, name: p.name, createdTime: p.imgDate || p.createdTime, folderPath: p.folderPath || '' }, false)}
-                    </div>`;
-                weekGrid.appendChild(card);
-            });
-        }
-
+        // ====== بناء قسم صور متفرقة ======
         if (scatteredMemories.length > 0) {
             const scatteredGroup = document.createElement('div');
             scatteredGroup.className = 'memory-year-group';
@@ -3408,25 +3507,18 @@
                             <div class="img-name">${escapeHtml(p.name)}</div>
                             <div class="memory-card-folder">📁 ${escapeHtml(p.folderPath || 'مجلد')}</div>
                             ${dateStr ? `<div class="img-date"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${dateStr}</div>` : ''}
-                        ${favoriteImages.has(p.id) ? '<div class="img-favorite-badge">⭐ مفضلة</div>' : ''}
+                            ${favoriteImages.has(p.id) ? '<div class="img-favorite-badge">⭐ مفضلة</div>' : ''}
                         </div>
-                    ${renderImageActions({ id: p.id, name: p.name, createdTime: p.createdTime, folderPath: p.folderPath || '' }, false)}
+                        ${renderImageActions({ id: p.id, name: p.name, createdTime: p.createdTime, folderPath: p.folderPath || '' }, false)}
                     </div>`;
                 scGrid.appendChild(card);
             });
         } else {
             scatteredPanel.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎯</div><div class="empty-state-title">لا توجد صور متفرقة</div><div>لا توجد صور كافية لاختيار عينة</div></div>';
         }
-        if (years.length === 0 && (!allImages || allImages.length === 0)) {
-            todayPanel.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📷</div><div class="empty-state-title">لا توجد صور لليوم</div><div>لا توجد لقطات متاحة حاليًا</div></div>';
-        }
 
-        const tabToday = document.getElementById('memTabToday');
-        const tabWeek = document.getElementById('memTabWeek');
         const tabScattered = document.getElementById('memTabScattered');
-        const favoritesPanel = document.getElementById('memoriesFavoritesPanel');
         const tabFavorites = document.getElementById('memTabFavorites');
-
         let currentTabImages = [];
 
         function updateMemDownloadBar(images) {
@@ -3437,47 +3529,29 @@
         }
 
         const activateMemTab = (tab) => {
-            const showToday = tab === 'today';
-            const showWeek = tab === 'week';
             const showScattered = tab === 'scattered';
             const showFavorites = tab === 'favorites';
-            tabToday.classList.toggle('active', showToday);
-            if (tabWeek) tabWeek.classList.toggle('active', showWeek);
             tabScattered.classList.toggle('active', showScattered);
             tabFavorites.classList.toggle('active', showFavorites);
-            todayPanel.classList.toggle('hidden-el', !showToday);
-            weekPanel.classList.toggle('hidden-el', !showWeek);
             scatteredPanel.classList.toggle('hidden-el', !showScattered);
             favoritesPanel.classList.toggle('hidden-el', !showFavorites);
-            [todayPanel, weekPanel, scatteredPanel, favoritesPanel].forEach(p => p && p.classList.remove('mem-panel-active'));
-            if (showToday) todayPanel.classList.add('mem-panel-active');
-            else if (showWeek) weekPanel.classList.add('mem-panel-active');
-            else if (showScattered) scatteredPanel.classList.add('mem-panel-active');
-            else if (showFavorites) favoritesPanel.classList.add('mem-panel-active');
-
-            if (showToday) {
-                const todayList = years.reduce((a, y) => a.concat(todayMemories[y].map(img => ({ ...img, _memSource: String(y) }))), []);
-                updateMemDownloadBar(todayList.length > 0 ? todayList : (window._memCurrentTabImagesGlobal || []));
-            }
-            else if (showWeek) updateMemDownloadBar(periodMemories);
-            else if (showScattered) updateMemDownloadBar(scatteredMemories);
+            [scatteredPanel, favoritesPanel].forEach(p => p && p.classList.remove('mem-panel-active'));
+            if (showScattered) { scatteredPanel.classList.add('mem-panel-active'); updateMemDownloadBar(scatteredMemories); }
             else if (showFavorites) renderFavoritesPanel();
         };
-        tabToday.onclick = () => activateMemTab('today');
-        if (tabWeek) tabWeek.onclick = () => activateMemTab('week');
-        tabScattered.onclick = () => activateMemTab('scattered');
-        tabFavorites.onclick = () => activateMemTab('favorites');
 
-        // تهيئة تبويب اليوم
-        todayPanel.classList.add('mem-panel-active');
-        const todayImgs = years.reduce((a, y) => a.concat(todayMemories[y].map(img => ({ ...img, _memSource: String(y) }))), []);
-        updateMemDownloadBar(todayImgs);
+        tabScattered.onclick = () => activateMemTab('scattered');
+        tabFavorites.onclick  = () => activateMemTab('favorites');
+
+        // ====== الافتراضي: قسم صور متفرقة ======
+        scatteredPanel.classList.add('mem-panel-active');
+        updateMemDownloadBar(scatteredMemories);
 
         function renderFavoritesPanel() {
             favoritesPanel.innerHTML = '';
             const favIds = [...favoriteImages];
             const favImgs = (allImages || []).filter(img => favIds.includes(img.id));
-            updateMemDownloadBar(favImgs);  // يُحدّث الشريط بصور المفضلة
+            updateMemDownloadBar(favImgs);
             if (favImgs.length === 0) {
                 favoritesPanel.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⭐</div><div class="empty-state-title">لا توجد صور في المفضلة</div><div>أضف صوراً للمفضلة من قائمة المزيد</div></div>';
                 return;
@@ -3515,7 +3589,7 @@
                             <div class="img-name">${escapeHtml(p.name)}</div>
                             <div class="memory-card-folder">📁 ${escapeHtml(p.folderPath || 'مجلد')}</div>
                             ${dateStr ? `<div class="img-date"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${dateStr}</div>` : ''}
-                            <div class="img-favorite-badge">⭐ مفضلة</div>
+                            ${favoriteImages.has(p.id) ? '<div class="img-favorite-badge">⭐ مفضلة</div>' : ''}
                         </div>
                         ${renderImageActions({ id: p.id, name: p.name, createdTime: p.createdTime, folderPath: p.folderPath || '' }, false)}
                     </div>`;
@@ -3523,6 +3597,7 @@
             });
         }
     }
+
 
     function renderRandomImages(allImages, targetContent = null, append = false) {
         const content  = targetContent || document.getElementById('memoriesContent');
@@ -3723,20 +3798,51 @@
             }));
             localStorage.setItem(MEMORIES_CACHE_KEY, JSON.stringify({
                 timestamp: Date.now(),
+                // نحفظ التاريخ للتحقق من تغيّر اليوم (إعادة حساب الملخص يومياً)
                 date: new Date().toDateString(),
                 memories,
                 allImages: compactAll
             }));
         } catch {}
     }
+
     function getCachedMemories() {
         try {
             const raw = localStorage.getItem(MEMORIES_CACHE_KEY);
             if (!raw) return null;
             const c = JSON.parse(raw);
+            // إذا تغيّر اليوم: الملخص قديم (صور اليوم تختلف) → أعد الحساب
             if (c.date !== new Date().toDateString()) return null;
+            // إذا مرّت أكثر من 24 ساعة: أعد الجلب من Drive
             if (Date.now() - c.timestamp > MEMORIES_CACHE_DURATION) return null;
             return { memories: c.memories, allImages: c.allImages || [] };
+        } catch { return null; }
+    }
+
+    // ===== كاش الصور الخام: يُبقي بيانات Drive لمدة 24 ساعة بغض النظر عن اليوم =====
+    // تعديل: مضاف لتجنب إعادة الاتصال بـ Drive عند تغيّر اليوم فقط
+    function saveRawImagesCache(allImages) {
+        try {
+            const compactAll = allImages.map(img => ({
+                id: img.id, name: img.name,
+                createdTime: img.createdTime,
+                folderPath: img.folderPath || ''
+            }));
+            localStorage.setItem(IMAGES_RAW_CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                allImages: compactAll
+            }));
+        } catch {}
+    }
+
+    function getRawImagesCache() {
+        try {
+            const raw = localStorage.getItem(IMAGES_RAW_CACHE_KEY);
+            if (!raw) return null;
+            const c = JSON.parse(raw);
+            // صالح لمدة 24 ساعة فقط
+            if (Date.now() - c.timestamp > MEMORIES_CACHE_DURATION) return null;
+            return c.allImages || null;
         } catch { return null; }
     }
  
@@ -3841,11 +3947,14 @@
 
         //###########[ استبدل هنا ]############
         // مفتاح حفظ شريط الألوان — غيّره لكل نسخة لتجنب التداخل
-        const SLIDER_KEY = 'MyArchive_colorSlider';
+        //###########[ استبدل هنا ]############
+        // مفتاح حفظ شريط الألوان — غيّره لكل نسخة لتجنب التداخل
+        const SLIDER_KEY = 'MyArchive_colorSliderVal';
         const saved = localStorage.getItem(SLIDER_KEY);
         if (saved !== null) slider.value = saved;
 		
-		// ###########[ استبدل هنا : اللون الافتراضي عند فتح الصفحة لأول مرة ]############
+		
+		// ###########[ اللون الافتراضي عند فتح الصفحة لأول مرة ]############
 		// غيّر الرقم 87 إلى أي قيمة من الجدول أدناه:
 	    //   0  = أبيض ناصع        6  = رمادي فاتح       12 = رمادي دافئ
 		//  18  = كريمي دافئ       24 = برتقالي فاتح     30 = برتقالي دافئ
@@ -3856,7 +3965,7 @@
 		//
 		// ⚠️ هذا السطر يعمل فقط عند أول فتح للصفحة أو بعد مسح البيانات المحفوظة
 		// إذا غيّرت الرقم ولم يتغير اللون: F12 ← Application ← Local Storage ← احذف MyArchive_colorSlider
-		// =====================================================================
+		// ###########[ استبدل هنا : اللون الافتراضي عند فتح الصفحة لأول مرة ]############
 		else slider.value = 81;
 
         function onSliderChange() {
@@ -3885,6 +3994,201 @@
         };
     })();
 
+    // ============================================================
+    // ====== SLIDESHOW START — نظام عرض الشرائح ======
+    // لنقل هذه الميزة لملف آخر: انسخ كل شيء بين SLIDESHOW START و SLIDESHOW END
+    // المتطلبات: يجب أن يكون lightboxImages و lightboxIndex معرّفَين قبل هذا الكود
+    // وأن تكون دوال showToast و formatCountEn موجودة في الملف
+    // ============================================================
+
+    // --- متغيرات الشرائح ---
+    let _ssImages      = [];      // قائمة الصور المعروضة في الشرائح
+    let _ssIndex       = 0;       // الصورة الحالية
+    let _ssTimer       = null;    // مؤقت الانتقال التلقائي
+    let _ssPaused      = false;   // هل العرض متوقف؟
+    let _ssDuration    = 3;       // مدة العرض بالثواني
+    let _ssLoop        = true;    // تكرار العرض؟
+    let _ssProgressRaf = null;    // requestAnimationFrame لشريط التقدم
+    let _ssStartTime   = 0;       // وقت بدء شريط التقدم
+
+    // فتح لوحة إعدادات الشرائح
+    // تُستدعى من زر ▶ في شريط أدوات الـ lightbox
+    function openSlideshowPanel() {
+        if (!lightboxImages || lightboxImages.length === 0) {
+            showToast('لا توجد صور للعرض', 'error');
+            return;
+        }
+        document.getElementById('slideshowPanel').classList.add('active');
+    }
+
+    function closeSlideshowPanel() {
+        document.getElementById('slideshowPanel').classList.remove('active');
+    }
+
+    // بدء عرض الشرائح بعد ضبط الإعدادات
+    function startSlideshow() {
+        closeSlideshowPanel();
+
+        // قراءة الإعدادات من اللوحة
+        _ssDuration = parseFloat(document.getElementById('ssDuration').value) || 3;
+        _ssLoop     = document.getElementById('ssLoop').checked;
+        const shuffle = document.getElementById('ssShuffle').checked;
+
+        // نسخ قائمة الصور من الـ lightbox الحالي (أيّ قسم كان: مجلدات، اليوم، أسبوع، متفرقة، مفضلة)
+        _ssImages = [...lightboxImages];
+
+        // ترتيب عشوائي إذا اختار المستخدم ذلك
+        if (shuffle) _ssImages = _ssImages.sort(() => Math.random() - 0.5);
+
+        // نبدأ من الصورة المفتوحة حالياً في الـ lightbox
+        _ssIndex  = Math.min(lightboxIndex, _ssImages.length - 1);
+        _ssPaused = false;
+
+        // إغلاق الـ lightbox وفتح شاشة الشرائح
+        document.getElementById('lightbox').classList.remove('active');
+        document.getElementById('slideshowOverlay').classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        // إعادة أيقونة الإيقاف للوضع الافتراضي (شريطان)
+        document.getElementById('ssPauseIcon').innerHTML =
+            '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+
+        // محاولة الدخول لوضع الشاشة الكاملة
+        _ssRequestFullscreen();
+
+        _ssShowImage(_ssIndex);
+        _ssScheduleNext();
+    }
+
+    // عرض صورة بالـ index المحدد
+    function _ssShowImage(idx) {
+        const img = _ssImages[idx];
+        if (!img) return;
+
+        const imgEl = document.getElementById('ssImg');
+        imgEl.style.opacity = '0';
+        // نفس حجم الصورة الذي يستخدمه الـ lightbox الأصلي
+        setTimeout(() => {
+            imgEl.src = `https://drive.google.com/thumbnail?id=${img.id}&sz=w2000`;
+            imgEl.onload = () => { imgEl.style.opacity = '1'; };
+        }, 200);
+
+        // تحديث العنوان والعداد
+        document.getElementById('ssTitle').innerText   = img.name || '';
+        document.getElementById('ssCounter').innerText =
+            `${formatCountEn(idx + 1)} / ${formatCountEn(_ssImages.length)}`;
+    }
+
+    // جدولة الانتقال للصورة التالية تلقائياً مع تحريك شريط التقدم
+    function _ssScheduleNext() {
+        clearTimeout(_ssTimer);
+        cancelAnimationFrame(_ssProgressRaf);
+        if (_ssPaused) return;
+
+        _ssStartTime = performance.now();
+        const duration = _ssDuration * 1000;
+        const fillEl = document.getElementById('ssProgressFill');
+        fillEl.style.width = '0%';
+
+        // تحريك شريط التقدم بـ requestAnimationFrame لحركة سلسة
+        function _animProgress(now) {
+            const elapsed = now - _ssStartTime;
+            const pct = Math.min((elapsed / duration) * 100, 100);
+            fillEl.style.width = pct + '%';
+            if (pct < 100) _ssProgressRaf = requestAnimationFrame(_animProgress);
+        }
+        _ssProgressRaf = requestAnimationFrame(_animProgress);
+
+        // الانتقال للصورة التالية بعد انتهاء المدة
+        _ssTimer = setTimeout(() => { slideshowStep(1); }, duration);
+    }
+
+    // الانتقال يدوياً: dir = +1 للتالي، -1 للسابق
+    function slideshowStep(dir) {
+        clearTimeout(_ssTimer);
+        cancelAnimationFrame(_ssProgressRaf);
+        let next = _ssIndex + dir;
+
+        if (next >= _ssImages.length) {
+            if (_ssLoop) { next = 0; }        // تكرار من البداية
+            else { stopSlideshow(); return; } // إيقاف عند النهاية
+        }
+        if (next < 0) next = _ssImages.length - 1;
+
+        _ssIndex = next;
+        _ssShowImage(_ssIndex);
+        if (!_ssPaused) _ssScheduleNext();
+    }
+
+    // إيقاف/استئناف العرض
+    function toggleSlideshowPause() {
+        _ssPaused = !_ssPaused;
+        const icon = document.getElementById('ssPauseIcon');
+        const overlay = document.getElementById('slideshowOverlay');
+
+        if (_ssPaused) {
+            clearTimeout(_ssTimer);
+            cancelAnimationFrame(_ssProgressRaf);
+            // أيقونة تشغيل (مثلث)
+            icon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
+            overlay.classList.add('show-controls'); // إبقاء شريط التحكم ظاهراً
+        } else {
+            // أيقونة إيقاف (شريطان)
+            icon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+            overlay.classList.remove('show-controls');
+            _ssScheduleNext();
+        }
+    }
+
+    // إيقاف العرض والخروج الكامل
+    function stopSlideshow() {
+        clearTimeout(_ssTimer);
+        cancelAnimationFrame(_ssProgressRaf);
+        _ssImages = [];
+        document.getElementById('slideshowOverlay').classList.remove('active');
+        document.getElementById('slideshowOverlay').classList.remove('show-controls');
+        document.getElementById('ssImg').src = '';
+        document.getElementById('ssProgressFill').style.width = '0%';
+        document.body.style.overflow = '';
+        _ssExitFullscreen();
+    }
+
+    // طلب وضع الشاشة الكاملة — دعم متعدد المتصفحات
+    function _ssRequestFullscreen() {
+        const el = document.getElementById('slideshowOverlay');
+        try {
+            if      (el.requestFullscreen)       el.requestFullscreen();
+            else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+            else if (el.mozRequestFullScreen)    el.mozRequestFullScreen();
+        } catch(_) {}
+    }
+
+    // الخروج من الشاشة الكاملة — دعم متعدد المتصفحات
+    function _ssExitFullscreen() {
+        try {
+            if      (document.exitFullscreen)       document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            else if (document.mozCancelFullScreen)  document.mozCancelFullScreen();
+        } catch(_) {}
+    }
+
+    // اختصارات لوحة المفاتيح أثناء عرض الشرائح
+    // ESC: إغلاق | ← →: تنقل | مسافة: إيقاف/استئناف
+    document.addEventListener('keydown', function(e) {
+        if (!document.getElementById('slideshowOverlay').classList.contains('active')) return;
+        if      (e.key === 'Escape')     { stopSlideshow(); }
+        else if (e.key === 'ArrowLeft')  { slideshowStep(-1); }
+        else if (e.key === 'ArrowRight') { slideshowStep(1); }
+        else if (e.key === ' ')          { e.preventDefault(); toggleSlideshowPause(); }
+    });
+
+    // إغلاق لوحة إعدادات الشرائح بالنقر خارجها
+    document.getElementById('slideshowPanel').addEventListener('click', function(e) {
+        if (e.target === this) closeSlideshowPanel();
+    });
+
+    // ====== SLIDESHOW END ======
+
 </script>
 </body>
-</html>
+	</html>
