@@ -2159,9 +2159,22 @@
         });
         document.getElementById('defaultEmptyState').classList.remove('hidden-el');
         if (window.innerWidth <= 768) closeSidebar();
-        const cached = getCachedMemories();
-        if (cached) renderMemories(cached.memories, cached.allImages);
-        else loadMemories();
+
+        // ====== إصلاح: استخدام البيانات المحملة مسبقاً بدون إعادة جلب ======
+        if (_lastAllImages.length > 0) {
+            // البيانات موجودة في الذاكرة — عرض فوري بدون اتصال
+            const memories = filterMemories(_lastAllImages);
+            renderMemories(memories, _lastAllImages);
+        } else {
+            // أول تشغيل أو بعد تحديث — نحتاج memoriesProgress
+            document.getElementById('memoriesContent').innerHTML = `
+                <div class="memories-loading">
+                    <div class="memories-loading-spinner"></div>
+                    <div class="memories-loading-text">⏳ جاري استرجاع الذكريات...</div>
+                    <div class="memories-loading-progress" id="memoriesProgress">جاري فحص المجلدات...</div>
+                </div>`;
+            loadMemories();
+        }
         if (!skipHistory) history.pushState({ type: 'home' }, '', window.location.pathname);
     }
  
@@ -2490,6 +2503,7 @@
 
     // ====== متغيرات فرز وعرض الذكريات ======
     let memCurrentSort = 'newest';
+    let _lastAllImages = []; // ====== يحفظ آخر allImages لاستخدامها في goHome بدون إعادة جلب ======
     let memCurrentView = 'grid';
     // الصور الأصلية للتبويب النشط (لإعادة الفلترة)
     window._memOriginalTabImages = [];
@@ -3236,18 +3250,17 @@
     // تحديث الذكريات (مسح الكاش وإعادة التحميل)
     // تعديل: يمسح الآن كاش الصور الخام أيضاً لضمان جلب جديد كامل من Drive
     function refreshMemories() {
-        // مسح الكاش
-        try { localStorage.removeItem(MEMORIES_CACHE_KEY); } catch(_) {}
-        try { localStorage.removeItem(IMAGES_RAW_CACHE_KEY); } catch(_) {}
-
-        // تأثير دوران على الزر
+        // تأثير دوران على أيقونة الزر
         const refreshSvg = document.querySelector('[title="تحديث الذكريات"] svg');
         if (refreshSvg) {
             refreshSvg.style.transition = 'transform 0.8s ease';
             refreshSvg.style.transform = 'rotate(360deg)';
             setTimeout(() => { refreshSvg.style.transition = ''; refreshSvg.style.transform = ''; }, 800);
         }
-
+        // مسح الكاش كاملاً بما في ذلك المتغير العام
+        try { localStorage.removeItem(MEMORIES_CACHE_KEY); } catch(_) {}
+        try { localStorage.removeItem(IMAGES_RAW_CACHE_KEY); } catch(_) {}
+        _lastAllImages = []; // مسح الذاكرة المؤقتة لإجبار الجلب من جديد
         // إعادة ضبط الواجهة
         navigationPath = []; currentFolderId = null; currentFolderName = '';
         currentImages = []; currentSubFolders = []; filteredImages = [];
@@ -3260,15 +3273,13 @@
         if (lb && lb.classList.contains('active')) { lb.classList.remove('active'); document.body.style.overflow = ''; }
         document.getElementById('defaultEmptyState').classList.remove('hidden-el');
         if (window.innerWidth <= 768) closeSidebar();
-
-        // ====== إصلاح: نضع memoriesProgress في HTML لأن loadMemories تحتاجه ======
+        // إعادة ضبط memoriesContent مع memoriesProgress
         document.getElementById('memoriesContent').innerHTML = `
             <div class="memories-loading">
                 <div class="memories-loading-spinner"></div>
                 <div class="memories-loading-text">⏳ جاري تحديث الذكريات...</div>
                 <div class="memories-loading-progress" id="memoriesProgress">جاري فحص المجلدات...</div>
             </div>`;
-
         showToast('جاري تحديث الذكريات... 🔄', 'success');
         loadMemories();
     }
@@ -3305,22 +3316,28 @@
     async function loadMemories() {
         updateMemoriesHeader();
 
+        // ===== أولاً: استخدام المتغير العام إذا كان محملاً بالفعل في هذه الجلسة =====
+        if (_lastAllImages.length > 0) {
+            const memories = filterMemories(_lastAllImages);
+            renderMemories(memories, _lastAllImages);
+            return;
+        }
+
         // ===== طبقة 1: كاش الملخص اليومي (يوم بيوم) =====
         const cached = getCachedMemories();
         if (cached) {
-            // الملخص اليومي موجود وصالح — عرضه مباشرة بدون أي اتصال
+            _lastAllImages = cached.allImages;
             renderMemories(cached.memories, cached.allImages);
             return;
         }
 
         // ===== طبقة 2: كاش الصور الخام (24 ساعة، مستقل عن اليوم) =====
-        // إذا تغيّر اليوم لكن لم تمر 24 ساعة على آخر جلب من Drive
-        // نعيد حساب الملخص من الصور المحفوظة بدون اتصال بالإنترنت
         const rawCached = getRawImagesCache();
         if (rawCached) {
             const progressEl = document.getElementById('memoriesProgress');
-            progressEl.innerText = '⚡ جاري إعداد الملخص من الكاش...';
+            if (progressEl) progressEl.innerText = '⚡ جاري إعداد الملخص من الكاش...';
             const memories = filterMemories(rawCached);
+            _lastAllImages = rawCached;
             cacheMemories(memories, rawCached);
             renderMemories(memories, rawCached);
             return;
@@ -3329,12 +3346,12 @@
         // ===== طبقة 3: جلب من Google Drive (عند انتهاء الكاش أو أول تشغيل) =====
         const progressEl = document.getElementById('memoriesProgress');
         try {
-            progressEl.innerText = '🔍 جاري فحص المجلدات الرئيسية...';
+            if (progressEl) progressEl.innerText = '🔍 جاري فحص المجلدات الرئيسية...';
             const allImages = await fetchAllImagesRecursive(ROOT_FOLDER_ID, '', progressEl);
             if (allImages.length === 0) { showNoMemories('لا توجد صور حتى الآن'); return; }
-            progressEl.innerText = `تم العثور على ${formatCountEn(allImages.length)} صورة، جاري تحليل التواريخ...`;
+            if (progressEl) progressEl.innerText = `تم العثور على ${formatCountEn(allImages.length)} صورة، جاري تحليل التواريخ...`;
             const memories = filterMemories(allImages);
-            // حفظ الصور الخام (24 ساعة) والملخص اليومي معاً
+            _lastAllImages = allImages;
             saveRawImagesCache(allImages);
             cacheMemories(memories, allImages);
             renderMemories(memories, allImages);
