@@ -1252,6 +1252,11 @@
         <div class="sidebar-header">
             <h3 style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
                 <span class="clickable" onclick="showRootFoldersPreview()" style="cursor:pointer;user-select:none;flex:1;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color=''">🗂️ المجلدات الرئيسية</span>
+                <!-- زر تحديث الذكريات من Drive -->
+                <button onclick="refreshMemories()" title="تحديث الذكريات" style="background:var(--bg-primary);border:1px solid var(--border);border-radius:10px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all 0.2s ease;" onmouseover="this.style.background='var(--hover-bg)';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='var(--bg-primary)';this.style.transform=''">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                </button>
+                <!-- زر الصفحة الرئيسية -->
                 <button onclick="goHome()" title="الصفحة الرئيسية" style="background:var(--bg-primary);border:1px solid var(--border);border-radius:10px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all 0.2s ease;" onmouseover="this.style.background='var(--hover-bg)';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='var(--bg-primary)';this.style.transform=''">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                 </button>
@@ -3231,18 +3236,41 @@
     // تحديث الذكريات (مسح الكاش وإعادة التحميل)
     // تعديل: يمسح الآن كاش الصور الخام أيضاً لضمان جلب جديد كامل من Drive
     function refreshMemories() {
+        // مسح الكاش
         try { localStorage.removeItem(MEMORIES_CACHE_KEY); } catch(_) {}
         try { localStorage.removeItem(IMAGES_RAW_CACHE_KEY); } catch(_) {}
+
+        // تأثير دوران على الزر
+        const refreshSvg = document.querySelector('[title="تحديث الذكريات"] svg');
+        if (refreshSvg) {
+            refreshSvg.style.transition = 'transform 0.8s ease';
+            refreshSvg.style.transform = 'rotate(360deg)';
+            setTimeout(() => { refreshSvg.style.transition = ''; refreshSvg.style.transform = ''; }, 800);
+        }
+
+        // إعادة ضبط الواجهة
+        navigationPath = []; currentFolderId = null; currentFolderName = '';
+        currentImages = []; currentSubFolders = []; filteredImages = [];
+        selectionMode = false; selectedImages.clear();
+        document.querySelectorAll('.folder-item, .sidebar-sub-item').forEach(el => el.classList.remove('active'));
+        ['breadcrumb','contentHeader','filterBar','sortBar','folderActionsBar','subFoldersSection','imagesSection'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.classList.add('hidden-el');
+        });
+        const lb = document.getElementById('lightbox');
+        if (lb && lb.classList.contains('active')) { lb.classList.remove('active'); document.body.style.overflow = ''; }
+        document.getElementById('defaultEmptyState').classList.remove('hidden-el');
+        if (window.innerWidth <= 768) closeSidebar();
+
+        // ====== إصلاح: نضع memoriesProgress في HTML لأن loadMemories تحتاجه ======
+        document.getElementById('memoriesContent').innerHTML = `
+            <div class="memories-loading">
+                <div class="memories-loading-spinner"></div>
+                <div class="memories-loading-text">⏳ جاري تحديث الذكريات...</div>
+                <div class="memories-loading-progress" id="memoriesProgress">جاري فحص المجلدات...</div>
+            </div>`;
+
         showToast('جاري تحديث الذكريات... 🔄', 'success');
-        setTimeout(() => {
-            // إعادة تحميل قسم الذكريات بعد مسح الكاش
-            const defaultState = document.getElementById('defaultEmptyState');
-            if (defaultState && !defaultState.classList.contains('hidden-el')) {
-                // نحن في صفحة الذكريات - نعيد تحميلها
-                document.getElementById('memoriesContent').innerHTML = '<div class="memories-loading"><div class="memories-loading-spinner"></div><div class="memories-loading-text">⏳ جاري تحديث الذكريات...</div></div>';
-                loadMemories();
-            }
-        }, 800);
+        loadMemories();
     }
  
     // ====== Sidebar toggle ======
